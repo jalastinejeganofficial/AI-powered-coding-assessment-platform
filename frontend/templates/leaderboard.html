@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Leaderboard - AI Interview Simulator{% endblock %}
+
+{% block content %}
+<h2><i class="fas fa-trophy me-2"></i>Leaderboard</h2>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                <h4 class="mb-0">{{ leaderboard|length }}</h4>
+                <small class="text-muted">Participants</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                <h4 class="mb-0">8.7</h4>
+                <small class="text-muted">Avg. Score</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-medal fa-2x text-warning mb-2"></i>
+                <h4 class="mb-0">24</h4>
+                <small class="text-muted">Top Performers</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="fas fa-fire fa-2x text-danger mb-2"></i>
+                <h4 class="mb-0">12</h4>
+                <small class="text-muted">Most Improved</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Top Performers</h5>
+                    <div>
+                        <select class="form-select form-select-sm d-inline-block w-auto" id="difficulty-filter">
+                            <option value="all">All Levels</option>
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>User</th>
+                                <th>Username</th>
+                                <th>Total Score</th>
+                                <th>Interviews</th>
+                                <th>Level</th>
+                                <th>Performance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in leaderboard %}
+                            <tr>
+                                <td>
+                                    {% if user.rank == 1 %}
+                                        <span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i>{{ user.rank }}</span>
+                                    {% elif user.rank == 2 %}
+                                        <span class="badge bg-secondary">{{ user.rank }}</span>
+                                    {% elif user.rank == 3 %}
+                                        <span class="badge bg-warning">{{ user.rank }}</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">{{ user.rank }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <span class="ms-2">{{ user.full_name or user.username }}</span>
+                                    </div>
+                                </td>
+                                <td>{{ user.username }}</td>
+                                <td>
+                                    <strong>{{ "%.2f"|format(user.total_score) }}</strong>
+                                    <div class="progress" style="height: 4px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: 80%" 
+                                             aria-valuenow="{{ user.total_score }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100"></div>
+                                    </div>
+                                </td>
+                                <td>{{ user.interview_count }}</td>
+                                <td>
+                                    <span class="badge bg-{% if user.level == 'beginner' %}info{% elif user.level == 'intermediate' %}warning{% else %}danger{% endif %}">
+                                        {{ user.level|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex">
+                                        <div class="me-2">
+                                            <i class="fas fa-arrow-up text-success"></i>
+                                            <small>+{{ "%.1f"|format((user.total_score / user.interview_count) if user.interview_count > 0 else 0) }}/interview</small>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if leaderboard|length == 0 %}
+                <div class="text-center py-5">
+                    <i class="fas fa-trophy fa-3x text-muted mb-3"></i>
+                    <h5>No participants yet</h5>
+                    <p class="text-muted">Be the first to take an interview and appear on the leaderboard!</p>
+                    <a href="{{ url_for('interviews') }}" class="btn btn-primary">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>Take Interview
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Performance by Level</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="levelChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="fas fa-running me-2"></i>Most Improved</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Sarah Johnson</h6>
+                            <small>+2.3 avg score</small>
+                        </div>
+                        <small>Improved from 5.2 to 7.5 over 4 interviews</small>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Michael Chen</h6>
+                            <small>+1.8 avg score</small>
+                        </div>
+                        <small>Improved from 6.1 to 7.9 over 3 interviews</small>
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Emma Rodriguez</h6>
+                            <small>+1.5 avg score</small>
+                        </div>
+                        <small>Improved from 4.8 to 6.3 over 5 interviews</small>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link href="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/Chart.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/Chart.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Filter leaderboard by difficulty level
+    $('#difficulty-filter').on('change', function() {
+        const selectedLevel = $(this).val();
+        console.log('Filtering by level:', selectedLevel);
+        // In a real implementation, this would make an AJAX call to filter results
+    });
+    
+    // Initialize chart if Chart.js is available
+    if (typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('levelChart').getContext('2d');
+        const levelChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Beginner', 'Intermediate', 'Advanced'],
+                datasets: [{
+                    label: 'Average Score',
+                    data: [7.2, 8.1, 6.8],
+                    backgroundColor: [
+                        'rgba(52, 152, 219, 0.6)',
+                        'rgba(243, 156, 18, 0.6)',
+                        'rgba(231, 76, 60, 0.6)'
+                    ],
+                    borderColor: [
+                        'rgba(52, 152, 219, 1)',
+                        'rgba(243, 156, 18, 1)',
+                        'rgba(231, 76, 60, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Session - AI Interview Simulator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>
+                        Interview Session #{{ session_id }}
+                    </h4>
+                    <div>
+                        <span class="badge bg-light text-dark">DSA Interview</span>
+                        <span class="badge bg-info ms-2">Active</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-user-circle fa-2x text-primary me-3"></i>
+                            <div>
+                                <h5 class="mb-0">{{ user.username }}</h5>
+                                <p class="text-muted mb-0">{{ user.full_name or user.email }}</p>
+                            </div>
+                        </div>
+                        <p class="text-muted">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ session.started_at[:10] }} • Started at {{ session.started_at[11:16] }}
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar" role="progressbar" style="width: 20%;" aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <small>Question 1 of 3 (5 total available)</small>
+                    </div>
+                </div>
+
+                {% for question in questions[:3] %}
+                <div class="interview-question">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5><i class="fas fa-question-circle me-2 text-primary"></i>{{ question.title }}</h5>
+                        <span class="badge bg-secondary">{{ question.difficulty.value|upper }}</span>
+                    </div>
+                    
+                    <p>{{ question.description }}</p>
+                    
+                    {% if question.constraints %}
+                    <div class="mb-3">
+                        <h6><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Constraints:</h6>
+                        <div class="alert alert-warning">
+                            <pre class="mb-0">{{ question.constraints }}</pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if question.input_examples and question.output_examples %}
+                    <div class="mb-3">
+                        <h6><i class="fas fa-terminal me-2 text-info"></i>Examples:</h6>
+                        <div class="row">
+                            {% for i in range(question.input_examples|length) %}
+                            <div class="col-md-6 mb-2">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <strong>Example {{ i + 1 }}</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-2">
+                                            <strong>Input:</strong>
+                                            <pre class="bg-light p-2 rounded">{{ question.input_examples[i] }}</pre>
+                                        </div>
+                                        <div>
+                                            <strong>Output:</strong>
+                                            <pre class="bg-success text-white p-2 rounded">{{ question.output_examples[i] }}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="response-form">
+                        <div class="mb-3">
+                            <label for="language-{{ question.id }}" class="form-label">Programming Language:</label>
+                            <select class="form-select" id="language-{{ question.id }}">
+                                <option value="python">Python</option>
+                                <option value="python3">Python 3</option>
+                                <option value="java">Java</option>
+                                <option value="cpp">C++</option>
+                                <option value="c">C</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="go">Go</option>
+                                <option value="rust">Rust</option>
+                            </select>
+                        </div>
+                        
+                        <label for="response-{{ question.id }}" class="form-label">Your Code Solution:</label>
+                        <textarea 
+                            id="response-{{ question.id }}" 
+                            class="form-control response-textarea" 
+                            rows="12" 
+                            placeholder="Write your code solution here..."
+                            style="font-family: 'Courier New', monospace; font-size: 14px;">
+                        </textarea>
+                        
+                        <div class="d-flex justify-content-between mt-3">
+                            <div>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Time limit: {{ question.estimated_time // 60 }} minutes
+                                </small>
+                            </div>
+                            <button 
+                                class="btn btn-primary submit-response-btn" 
+                                data-question-id="{{ question.id }}"
+                                data-session-id="{{ session_id }}">
+                                <i class="fas fa-paper-plane me-2"></i>Submit Answer
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="response-result-{{ question.id }}" class="mt-3" style="display: none;"></div>
+                </div>
+                {% endfor %}
+                
+                <div class="text-center mt-4">
+                    <button class="btn btn-success btn-lg">
+                        <i class="fas fa-flag-checkered me-2"></i>Complete Interview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .response-textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+    
+    .interview-question {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .feedback-container {
+        border: 1px solid #d0ebff;
+        background-color: #f8fbfd;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .score-badge {
+        display: inline-block;
+        padding: 0.25em 0.4em;
+        font-size: 75%;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.375rem;
+        margin-right: 0.25rem;
+    }
+    
+    .score-badge-high { background-color: #d3f9d8; color: #2b8a3e; }
+    .score-badge-medium { background-color: #fff9db; color: #e67700; }
+    .score-badge-low { background-color: #ffe6e6; color: #c92a2a; }
+</style>
+
+<script>
+$(document).ready(function() {
+    $('.submit-response-btn').on('click', function() {
+        const questionId = $(this).data('question-id');
+        const sessionId = $(this).data('session-id');
+        const responseText = $(`#response-${questionId}`).val().trim();
+        const selectedLanguage = $(`#language-${questionId}`).val();
+        
+        if (!responseText) {
+            alert('Please enter your code solution before submitting.');
+            return;
+        }
+        
+        // Show loading state
+        const originalText = $(this).html();
+        $(this).html('<i class="fas fa-spinner fa-spin me-2"></i>Submitting...');
+        $(this).prop('disabled', true);
+        
+        // Send response to backend
+        $.ajax({
+            url: '/submit_response',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                'session_id': sessionId,
+                'question_id': questionId,
+                'response': responseText,
+                'language': selectedLanguage,
+                'execution_time': null  // Could be calculated if we implement timing
+            }),
+            success: function(response) {
+                if (response.success) {
+                    // Display feedback
+                    const resultDiv = $(`#response-result-${questionId}`);
+                    const result = response.result;
+                    
+                    let feedbackHTML = `
+                        <div class="feedback-container">
+                            <h6><i class="fas fa-star me-2 text-warning"></i>Evaluation Results</h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <strong>Technical Accuracy:</strong>
+                                    <span class="score-badge ${getScoreBadgeClass(result.technical_accuracy)}">${result.technical_accuracy.toFixed(1)}/10</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Problem Solving:</strong>
+                                    <span class="score-badge ${getScoreBadgeClass(result.problem_solving_logic)}">${result.problem_solving_logic.toFixed(1)}/10</span>
+                                </div>
+                                <div class="col-md-4">
+                                    <strong>Communication:</strong>
+                                    <span class="score-badge ${getScoreBadgeClass(result.communication_clarity)}">${result.communication_clarity.toFixed(1)}/10</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <strong>Overall Feedback:</strong>
+                                <p class="mb-0">${result.feedback}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    resultDiv.html(feedbackHTML).show();
+                    
+                    // Clear textarea
+                    $(`#response-${questionId}`).val('');
+                    
+                    // Move to next question or show completion message
+                    showNextQuestion();
+                } else {
+                    alert('Error submitting response: ' + response.error);
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('Error submitting response: ' + error);
+            },
+            complete: function() {
+                // Restore button
+                $(this).html(originalText);
+                $(this).prop('disabled', false);
+            }.bind(this)
+        });
+    });
+    
+    function getScoreBadgeClass(score) {
+        if (score >= 8) return 'score-badge-high';
+        if (score >= 5) return 'score-badge-medium';
+        return 'score-badge-low';
+    }
+    
+    function showNextQuestion() {
+        // In a real implementation, we would load the next question
+        // For now, just show a message
+        console.log('Moving to next question...');
+    }
+});
+</script>
+{% endblock %}
